@@ -1,0 +1,12 @@
+<<<<<<< HEAD
+IdentityFile ~/.ssh/school
+PasswordAuthentication no
+PubkeyAuthentication yes
+=======
+Host *
+    IdentityFile ~/.ssh/school
+    PasswordAuthentication no
+    SendEnv LANG LC_*
+    HashKnownHosts yes
+    GSSAPIAuthentication yes
+>>>>>>> ba77720530a9b51c0950f3ee95931dbb80e36ee7

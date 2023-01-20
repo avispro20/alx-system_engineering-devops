@@ -1,79 +1,59 @@
-# add stable version of nginx
-exec { 'add nginx stable repo':
-  command => 'sudo add-apt-repository ppa:nginx/stable',
-  path    => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+# Nginx server setup and configuration
+exec { 'Update the apt repository':
+  command => 'apt update',
+  path    => '/usr/bin:/usr/sbin:/bin'
 }
 
-# update software packages list
-exec { 'update packages':
-  command => 'apt-get update',
-  path    => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+package { 'The web server':
+  ensure          => installed,
+  name            => 'nginx',
+  provider        => 'apt',
+  install_options => ['-y']
 }
 
-# install nginx
-package { 'nginx':
-  ensure     => 'installed',
+file { 'The home page':
+  ensure  => file,
+  path    => '/var/www/html/index.html',
+  mode    => '0744',
+  owner   => 'www-data',
+  content => "Hello World!\n"
 }
 
-# allow HTTP
-exec { 'allow HTTP':
-  command => "ufw allow 'Nginx HTTP'",
-  path    => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
-  onlyif  => '! dpkg -l nginx | egrep \'îi.*nginx\' > /dev/null 2>&1',
+file { 'The 404 page':
+  ensure  => file,
+  path    => '/var/www/error/404.html',
+  mode    => '0744',
+  owner   => 'www-data',
+  content => "Ceci n'est pas une page\n"
 }
 
-# change folder rights
-exec { 'chmod www folder':
-  command => 'chmod -R 755 /var/www',
-  path    => '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
-}
-
-# create index file
-file { '/var/www/html/index.html':
-  content => "Hello World!\n",
-}
-
-# create index file
-file { '/var/www/html/404.html':
-  content => "Ceci n'est pas une page\n",
-}
-
-# add redirection and error page
-file { 'Nginx default config file':
+file { 'Nginx server config file':
   ensure  => file,
   path    => '/etc/nginx/sites-enabled/default',
+  mode    => '0744',
+  owner   => 'www-data',
   content =>
 "server {
-        listen 80 default_server;
-        listen [::]:80 default_server;
-               root /var/www/html;
-        # Add index.php to the list if you are using PHP
-        index index.html index.htm index.nginx-debian.html;
-        server_name _;
-        location / {
-                # First attempt to serve request as file, then
-                # as directory, then fall back to displaying a 404.
-                try_files \$uri \$uri/ =404;
-        }
-        error_page 404 /404.html;
-        location  /404.html {
-            internal;
-        }
-        
-        if (\$request_filename ~ redirect_me){
-            rewrite ^ https://www.youtube.com/watch?v=QH2-TGUlwu4 permanent;
-        }
-}
-",
-}
-# restart nginx
-exec { 'restart service':
-  command => 'service nginx restart',
-  path    => '/usr/bin:/usr/sbin:/bin',
+	listen 80 default_server;
+	listen [::]:80 default_server;
+	root /var/www/html;
+	index index.html index.htm index.nginx-debian.html;
+	server_name _;
+	location / {
+		try_files \$uri \$uri/ =404;
+	}
+	if (\$request_filename ~ redirect_me){
+		rewrite ^ https://sketchfab.com/bluepeno/models permanent;
+	}
+	error_page 404 /404.html;
+	location = /404.html {
+		root /var/www/error/;
+		internal;
+	}
+}"
 }
 
-# start service nginx
-service { 'nginx':
-  ensure  => running,
-  require => Package['nginx'],
-}}
+exec { 'Start the server':
+  command => 'service nginx restart',
+  path    => '/usr/bin:/usr/sbin:/bin'
+}
